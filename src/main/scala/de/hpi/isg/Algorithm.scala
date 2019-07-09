@@ -4,7 +4,6 @@ import de.hpi.isg.spark.{DataFileReader, DataFrameProcessor}
 import de.hpi.isg.utils.SeqFunctions
 import de.hpi.isg.utils.SeqFunctions.HISTOGRAM_ALGORITHM
 
-
 /**
   *
   * The data file boundary detection algorithm class.
@@ -33,8 +32,9 @@ class Algorithm(val config: String) {
               val (min, max) = (histogramDifference.min, histogramDifference.max)
               val histogramDiff = zipWithLinePairIndicatorOrdered(histogramDifference, min, max)
               histogramDiff
-            })
 
+              val knee = detectKnee(histogramDiff)
+            })
   }
 
   def detectDelimiterCandidates(): Seq[Char] = {
@@ -74,4 +74,16 @@ class Algorithm(val config: String) {
     zipWithLinePairIndicator(histogramDifference, min, max).sortBy(indexedHistDiff => indexedHistDiff._2)(Ordering[Double].reverse)
   }
 
+  /**
+    * Detect the knee in the given ordered histogram difference sequence. The returned knee is composed of two parts: the line pair indicator and the biggest histogram difference.
+    *
+    * @param histogramDifferenceOrdered the ordered histogram difference
+    * @return the knee point
+    */
+  def detectKnee(histogramDifferenceOrdered: Seq[(String, Double)]): (String, Double) = {
+    histogramDifferenceOrdered
+            .sliding(2)
+            .map(pair => (pair(0)._1 , pair(0)._2 - pair(1)._2))
+            .maxBy(_._2)
+  }
 }

@@ -19,3 +19,6 @@ buildNumber.properties
 # MacOS
 .DS_Store
 ._.*
+
+# datasets
+src/main/resources/
