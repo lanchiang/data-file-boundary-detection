@@ -8,6 +8,11 @@ package de.hpi.isg.targets
   */
 class Line(val content: String, val lineNumber: Int) {
 
+  /**
+    * All the cells in this line.
+    */
+  private var cells: Array[Cell] = _
+
   def buildHistogram(): Unit = {
 
   }

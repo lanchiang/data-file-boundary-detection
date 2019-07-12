@@ -22,3 +22,6 @@ buildNumber.properties
 
 # datasets
 src/main/resources/
+
+#evaluation
+results

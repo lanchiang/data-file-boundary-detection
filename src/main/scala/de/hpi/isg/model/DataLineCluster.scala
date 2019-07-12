@@ -1,6 +1,6 @@
 package de.hpi.isg.model
 
-import smile.clustering.dbscan
+import smile.clustering.{DBSCAN, dbscan}
 
 /**
   * This cluster groups similar lines of a data file according to the character frequency feature.
@@ -10,30 +10,39 @@ import smile.clustering.dbscan
   */
 class DataLineCluster {
 
+  private var clusters: DBSCAN[Array[Double]] = _
+
+  private var linePoints: Seq[LinePoint] = _
+
   def run(lines: Seq[String]): Unit = {
     val featureSpace = createFeatureSpace(lines)
-    val linePoints = lines.map(line => new LinePoint(line, featureSpace))
+    linePoints = lines.map(line => new LinePoint(line, featureSpace))
 
     val data = linePoints.map(_.characterVector).map(array => array.map(_._2.toDouble)).toArray
-    val clusters = dbscan(data, 10, 5)
+    clusters = dbscan(data, 100, 1)
   }
 
-  def createFeatureSpace(lines: Seq[String]): Set[Char] = {
+  def getGroups: Map[Int, Array[LinePoint]] = {
+    val labeledLinePoints = linePoints.toArray.zip(clusters.getClusterLabel)
+    val groupedLinePointsByLabel = labeledLinePoints.groupBy(_._2).map(pair => (pair._1, pair._2.map(labeledLinePoint => labeledLinePoint._1)))
+    groupedLinePointsByLabel
+  }
+
+  private def createFeatureSpace(lines: Seq[String]): Set[Char] = {
     val characterArrayByLine = lines.map(_.toCharArray).zipWithIndex.map(pair => pair.swap).toArray
-    val characters = characterArrayByLine
+    characterArrayByLine
             .flatMap(pair => pair._2)
             .distinct
             .filter(char => char.toInt <= 127)
             .filter(char => !char.isLetterOrDigit)
             .toSet
-    characters
   }
 }
 
 /**
   * A line point is a vector created by encoding the line into the character space.
   */
-private class LinePoint(line: String, featureSpace: Set[Char]) {
+protected class LinePoint(val line: String, val featureSpace: Set[Char]) {
 
   val characterVector: Array[(Char, Int)] = createCharVector()
 
