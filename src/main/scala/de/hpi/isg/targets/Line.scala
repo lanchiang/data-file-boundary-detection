@@ -6,12 +6,12 @@ package de.hpi.isg.targets
   * @author Lan Jiang
   * @since 2019-04-09
   */
-class Line(val content: String, val lineNumber: Int) {
+class Line(val lineNumber: Int, val content: String, val delimiter: Char) {
 
   /**
     * All the cells in this line.
     */
-  private var cells: Array[Cell] = _
+  val cells: Array[Cell] = content.split(delimiter).map(new Cell(_))
 
   def buildHistogram(): Unit = {
 

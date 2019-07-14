@@ -1,5 +1,6 @@
 package de.hpi.isg.spark
 
+import de.hpi.isg.targets.Line
 import org.apache.spark.sql.{DataFrame, Row}
 
 import scala.util.{Failure, Success, Try}
@@ -30,6 +31,19 @@ object DataFrameProcessor {
               case Failure(_) => 0
             })
             .toSeq
+  }
+
+  def createValueLengthHistogram(lines: Array[Line]): Array[Seq[Double]] = {
+    lines.map(valueLengthHistogram)
+  }
+
+  private def valueLengthHistogram(line: Line): Seq[Double] = {
+    line.cells.map(cell => Try {
+      cell.value.toString
+    } match {
+      case Success(value) => value.length.toDouble
+      case Failure(_) => 0
+    })
   }
 
   def fillEmptyLineHistogram(histograms: Array[Seq[Double]]): Array[Seq[Double]] = {

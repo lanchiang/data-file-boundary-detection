@@ -1,12 +1,12 @@
 package de.hpi.isg.utils
 
-import de.hpi.isg.utils.SeqFunctions.HISTOGRAM_ALGORITHM.HISTOGRAM_ALGORITHM
+import de.hpi.isg.utils.CollectionFunctions.HISTOGRAM_ALGORITHM.HISTOGRAM_ALGORITHM
 
 /**
   * @author Lan Jiang
   * @since 2019-07-08
   */
-object SeqFunctions {
+object CollectionFunctions {
 
   /**
     * Calculates the histogram difference between the two given histograms represented as two double sequences.
@@ -16,7 +16,7 @@ object SeqFunctions {
     * @param algorithm is the algorithm used to calculate the histogram difference.
     * @return the histogram difference as a double
     */
-  def histogramDifference(histogram1: Seq[Double], histogram2: Seq[Double], algorithm: HISTOGRAM_ALGORITHM): Double = {
+  def histogramDifference(histogram1: Seq[Double], histogram2: Seq[Double], algorithm: HISTOGRAM_ALGORITHM = HISTOGRAM_ALGORITHM.Bhattacharyya): Double = {
     val ave_hist1 = histogram1.sum / histogram1.size
     val ave_hist2 = histogram2.sum / histogram2.size
 

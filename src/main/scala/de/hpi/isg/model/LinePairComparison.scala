@@ -1,8 +1,6 @@
 package de.hpi.isg.model
-import de.hpi.isg.spark.{DataFileReader, DataFrameProcessor}
-import de.hpi.isg.utils.SeqFunctions
-import de.hpi.isg.utils.SeqFunctions.HISTOGRAM_ALGORITHM
-import org.apache.spark.sql.Row
+
+import de.hpi.isg.targets.{Line, LinePair}
 
 /**
   * This approach applies histogram difference to neighbouring line pairs in the data file to detect the boundary of data and non-data.
@@ -10,26 +8,36 @@ import org.apache.spark.sql.Row
   * @author Lan Jiang
   * @since 2019-07-12
   */
-class LinePairComparison extends AbstractModel {
+class LinePairComparison(val rawLines: Array[String]) extends AbstractModel {
 
-  override def run(row: Row): Unit = {
-    detectDelimiterCandidates()
-            .map(delimiter => new DataFileReader(String.valueOf(delimiter)).readFile())
-            .map(dataset => DataFrameProcessor.mapToLineLengthHistogram(dataset))
-            .map(histograms => DataFrameProcessor.fillEmptyLineHistogram(histograms))
-            .map(histograms => {
-              // calculate the histogram difference of the neighbouring pairs of histograms, zipping them with index
-              val histogramDifference = histograms
+  override def run(): Unit = {
+    val result = detectDelimiterCandidates()
+            .map(delimiter => {
+              val linePairs = rawLines.zipWithIndex
+                      .map(pair => new Line(pair._2 + 1, pair._1, delimiter))
                       .sliding(2)
-                      .map(pair =>
-                        SeqFunctions.histogramDifference(pair(0), pair(1), HISTOGRAM_ALGORITHM.Bhattacharyya)
-                      ).toSeq
-              val (min, max) = (histogramDifference.min, histogramDifference.max)
-              val histogramDiff = zipWithLinePairIndicatorOrdered(histogramDifference, min, max)
-              histogramDiff
+                      .map(linePair => new LinePair(linePair(0), linePair(1))).toSeq
 
-              val knee = detectKnee(histogramDiff)
+              // linePairs sorted by their histogram difference.
+              val result = linePairs.sortBy(linePair => linePair.histogramDifference)(Ordering[Double].reverse)
+              result
             })
+
+//            .map(DataFrameProcessor.createValueLengthHistogram)
+//            .map(histograms => DataFrameProcessor.fillEmptyLineHistogram(histograms))
+//            .map(histograms => {
+//              // calculate the histogram difference of the neighbouring pairs of histograms, zipping them with index
+//              val histogramDifference = histograms
+//                      .sliding(2)
+//                      .map(pair =>
+//                        SeqFunctions.histogramDifference(pair(0), pair(1), HISTOGRAM_ALGORITHM.Bhattacharyya)
+//                      ).toSeq
+//              val (min, max) = (histogramDifference.min, histogramDifference.max)
+//              val histogramDiff = zipWithLinePairIndicatorOrdered(histogramDifference, min, max)
+//              histogramDiff
+//
+//              val knee = detectKnee(histogramDiff)
+//            })
   }
 
   def detectDelimiterCandidates(): Seq[Char] = {
@@ -47,12 +55,12 @@ class LinePairComparison extends AbstractModel {
     */
   private def zipWithLinePairIndicator(histogramDifference: Seq[Double], min: Double, max: Double): Seq[(String, Double)] = {
     histogramDifference
-            .map(diff => (diff-min)/(max-min))
+            .map(diff => (diff - min) / (max - min))
             .zipWithIndex
             .map(pair => {
-              val x = (pair._2+1).toString.concat("||").concat((pair._2+2).toString)
+              val x = (pair._2 + 1).toString.concat("||").concat((pair._2 + 2).toString)
               val y = pair._1
-              (x,y)
+              (x, y)
             })
   }
 
@@ -78,7 +86,7 @@ class LinePairComparison extends AbstractModel {
   def detectKnee(histogramDifferenceOrdered: Seq[(String, Double)]): (String, Double) = {
     histogramDifferenceOrdered
             .sliding(2)
-            .map(pair => (pair(0)._1 , pair(0)._2 - pair(1)._2))
+            .map(pair => (pair(0)._1, pair(0)._2 - pair(1)._2))
             .maxBy(_._2)
   }
 }
